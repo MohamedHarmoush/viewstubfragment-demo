@@ -15,14 +15,19 @@ abstract class BaseViewStubFragment : Fragment() {
     private var mSavedInstanceState: Bundle? = null
     private var hasInflated = false
     private var mViewStub: ViewStub? = null
+    private var visible = false
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
         val view = inflater.inflate(R.layout.fragment_viewstub, container, false)
         mViewStub = view.findViewById(R.id.fragmentViewStub) as ViewStub
         mViewStub!!.layoutResource = getViewStubLayoutResource()
         mSavedInstanceState = savedInstanceState
 
-        if (userVisibleHint && !hasInflated) {
+        if (visible && !hasInflated) {
             val inflatedView = mViewStub!!.inflate()
             onCreateViewAfterViewStubInflated(inflatedView, mSavedInstanceState)
             afterViewStubInflated(view)
@@ -31,7 +36,10 @@ abstract class BaseViewStubFragment : Fragment() {
         return view
     }
 
-    protected abstract fun onCreateViewAfterViewStubInflated(inflatedView: View, savedInstanceState: Bundle?)
+    protected abstract fun onCreateViewAfterViewStubInflated(
+        inflatedView: View,
+        savedInstanceState: Bundle?
+    )
 
     /**
      * The layout ID associated with this ViewStub
@@ -49,19 +57,31 @@ abstract class BaseViewStubFragment : Fragment() {
     protected fun afterViewStubInflated(originalViewContainerWithViewStub: View?) {
         hasInflated = true
         if (originalViewContainerWithViewStub != null) {
-            val pb = originalViewContainerWithViewStub.findViewById<ProgressBar>(R.id.inflateProgressbar)
+            val pb =
+                originalViewContainerWithViewStub.findViewById<ProgressBar>(R.id.inflateProgressbar)
             pb.visibility = View.GONE
         }
     }
 
-    override fun setUserVisibleHint(isVisibleToUser: Boolean) {
-        super.setUserVisibleHint(isVisibleToUser)
+    override fun onResume() {
+        super.onResume()
 
-        if (isVisibleToUser && mViewStub != null && !hasInflated) {
+        visible = true
+        if (mViewStub != null && !hasInflated) {
             val inflatedView = mViewStub!!.inflate()
             onCreateViewAfterViewStubInflated(inflatedView, mSavedInstanceState)
             afterViewStubInflated(view)
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        hasInflated = false
+    }
+
+    override fun onPause() {
+        super.onPause()
+        visible = false
     }
 
     // Thanks to Noa Drach, this will fix the orientation change problem
